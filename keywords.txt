@@ -1,0 +1,44 @@
+#	####################################################
+#	СИНТАКСИЧЕСКАЯ РАСКРАСКА ДЛЯ БИБИЛИОТЕКИ:
+#	iarduino_GPS_NMEA
+#	####################################################
+#	ТИПЫ ДАННЫХ:							   (KEYWORD1)
+	iarduino_GPS_NMEA	KEYWORD1
+#	####################################################
+#	МЕТОДЫ И ФУНКЦИИ:						   (KEYWORD2)
+	begin	KEYWORD2
+	timeZone	KEYWORD2
+	read	KEYWORD2
+	timeOut	KEYWORD2
+	errTim	KEYWORD2
+	errDat	KEYWORD2
+	errPos	KEYWORD2
+	errCrs	KEYWORD2
+	status	KEYWORD2
+	latitude	KEYWORD2
+	longitude	KEYWORD2
+	altitude	KEYWORD2
+	satellites	KEYWORD2
+	speed	KEYWORD2
+	course	KEYWORD2
+	PDOP	KEYWORD2
+	HDOP	KEYWORD2
+	VDOP	KEYWORD2
+	seconds	KEYWORD2
+	minutes	KEYWORD2
+	hours	KEYWORD2
+	Hours	KEYWORD2
+	midday	KEYWORD2
+	day	KEYWORD2
+	weekday	KEYWORD2
+	month	KEYWORD2
+	year	KEYWORD2
+	Year	KEYWORD2
+	Unix	KEYWORD2
+
+#	####################################################
+#	КОНСТАНТЫ:								   (LITERAL1)
+	GPS_AutoDetectZone	LITERAL1
+	GPS_VISIBLE	LITERAL1
+	GPS_ACTIVE	LITERAL1
+
