@@ -1,5 +1,5 @@
 //	Библиотека парсинга протокола NMEA.
-//  Версия: 1.0.0
+//  Версия: 1.1.0
 //  Последнюю версию библиотеки Вы можете скачать по ссылке: https://iarduino.ru/file/538.html
 //  Подробное описание функций бибилиотеки доступно по ссылке: https://wiki.iarduino.ru/page/NMEA-protocol-parser/
 //  Библиотека является собственностью интернет магазина iarduino.ru и может свободно использоваться и распространяться!
@@ -11,7 +11,9 @@
 #ifndef iarduino_GPS_NMEA_h																											//
 #define iarduino_GPS_NMEA_h																											//
 																																	//
-#include "SoftwareSerial.h"																											//
+#ifdef    SoftwareSerial_h																											//	Если в скетче подключена библиотека  SoftwareSerial,
+#include "SoftwareSerial.h"																											//	то разрешаем работать  с библиотекой SoftwareSerial.
+#endif																																//
 																																	//
 #if defined(ARDUINO) && (ARDUINO >= 100)																							//
 #include		<Arduino.h>																											//
@@ -39,7 +41,9 @@ class iarduino_GPS_NMEA{																											//
 	public:																															//
 	/**	Пользовательские функции **/																								//
 		bool		begin			(HardwareSerial &i, bool j=1){_flgTypeSerial=1;_objSerial=&i;_flgDataOld=j; return _begin();}	//	Определяем функцию инициализации парсера				(Параметр:  объект для работы с аппаратным  UART, флаг указывающий выводить предыдущие данные при потере связи со спутниками или недостоверными результатами вычислений).
+		#ifdef SoftwareSerial_h																										//
 		bool		begin			(SoftwareSerial &i, bool j=1){_flgTypeSerial=2;_objSerial=&i;_flgDataOld=j; return _begin();}	//	Определяем функцию инициализации парсера				(Параметр:  объект для работы с программным UART, флаг указывающий выводить предыдущие данные при потере связи со спутниками или недостоверными результатами вычислений).
+		#endif																														//
 		float		timeZone		(float time=14.0f			){_flgAutoTimeZone=(time==GPS_AutoDetectZone?1:0); if(abs(time)<13.0f){_timeZone=time; } return _timeZone; }	//	Определяем функцию указания/получения часовой зоны		(Параметр:  ±часовой пояс или GPS_AutoDetectZone).
 		template					<typename t,size_t j,size_t k>																	//	Определяем шаблон для следующей функции					(Параметр:  t-тип массива, j-количество элементов массива, k-количество элементов подмассива).
 		bool		read			(t(&i)[j][k], bool f=false	){ return _read(&i[0][0], j, k, f    ); }							//	Определяем функцию чтения данных NMEA из UART			(Параметры: массив для данных о спутниках, флаг получения данных только о спутниках участвующих в позиционировании).

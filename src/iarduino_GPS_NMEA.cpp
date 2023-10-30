@@ -1,5 +1,4 @@
 #include "iarduino_GPS_NMEA.h"																										//
-#include "SoftwareSerial.h"																											//
 																																	//
 //		ИНИЦИАЛИЗАЦИЯ ПАРСЕРА:																										//	Возвращаемое значение:	флаг результата инициализации (true/false).
 bool	iarduino_GPS_NMEA::_begin(void){																							//	Параметры:				отсутствуют.
@@ -320,7 +319,7 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 				errDat=available?2:1;	if( status[GPS_StatusZDA ]=='A' || status[GPS_StatusZDA ]=='D' ){errDat=0;}					//	Определяем флаг указывающий на то, что полученная дата  недостоверна.
 				errCrs=available?2:1;	if( status[GPS_StatusVTG ]=='A' || status[GPS_StatusVTG ]=='D' ){errCrs=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления скорости и курса.
 										if( status[GPS_StatusVTG ]=='E' || status[GPS_StatusVTG ]=='M' ){errCrs=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления скорости и курса.
-										if( status[GPS_StatusGGA ] >'0'                                ){errCrs=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления скорости и курса.
+										if( status[GPS_StatusGGA ] >'0' || status[GPS_StatusRMC1]=='A' ){errCrs=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления скорости и курса.
 				errPos=available?2:1;	if( status[GPS_StatusGLL1]=='A' || status[GPS_StatusRMC1]=='A' ){errPos=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления координат, или полученные координаты недостоверны.
 										if( status[GPS_StatusGGA ] >'0'                                ){errPos=0;}					//	Определяем флаг указывающий на то, что не определён способ вычисления координат, или полученные координаты недостоверны.
 			}	return available?1:0;																								//
@@ -336,10 +335,28 @@ uint8_t	iarduino_GPS_NMEA::_findIndexID(uint8_t id, uint8_t* arrSat, uint8_t arr
 }																																	//
 																																	//
 //		ФУНКЦИИ РАБОТЫ С UART:																										//
-bool	iarduino_GPS_NMEA::_SerialReady    (void){ if(_flgTypeSerial==1){return (bool   )(*(HardwareSerial*)_objSerial);            }else if(_flgTypeSerial==2){return (bool   )(*(SoftwareSerial*)_objSerial);            }else{return 0;} }	//	Проверка готовности UART.
-uint8_t	iarduino_GPS_NMEA::_SerialRead     (void){ if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).read();     }else if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).read();     }else{return 0;} }	//	Чтение байта из буфера UART.
-uint8_t	iarduino_GPS_NMEA::_SerialAvailable(void){ if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).available();}else if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).available();}else{return 0;} }	//	Чтение заполненности буфера UART.
-void	iarduino_GPS_NMEA::_SerialFlush    (void){ while(_SerialAvailable()){_SerialRead();}}										//	Очистка буфера UART.
+bool	iarduino_GPS_NMEA::_SerialReady(void){																						//
+			if(_flgTypeSerial==1){return (bool   )(*(HardwareSerial*)_objSerial);            }else									//	Проверка готовности аппаратного UART.
+			#ifdef SoftwareSerial_h																									//
+			if(_flgTypeSerial==2){return (bool   )(*(SoftwareSerial*)_objSerial);            }else									//	Проверка готовности программного UART.
+			#endif																													//
+			                     {return 0;}																						//
+}																																	//
+uint8_t	iarduino_GPS_NMEA::_SerialRead(void){																						//
+			if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).read();     }else									//	Чтение байта из буфера аппаратного UART.
+			#ifdef SoftwareSerial_h																									//
+			if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).read();     }else									//	Чтение байта из буфера программного UART.
+			#endif																													//
+			                     {return 0;}																						//
+}																																	//
+uint8_t	iarduino_GPS_NMEA::_SerialAvailable(void){																					//
+			if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).available();}else									//	Чтение заполненности буфера аппаратного UART.
+			#ifdef SoftwareSerial_h																									//
+			if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).available();}else									//	Чтение заполненности буфера программного UART.
+			#endif																													//
+			                     {return 0;}																						//
+}																																	//
+void	iarduino_GPS_NMEA::_SerialFlush(void){ while(_SerialAvailable()){_SerialRead();} }											//	Очистка буфера UART.
 																																	//
 //		ФУНКЦИИ ОПРЕДЕЛЕНИЯ ВРЕМЕНИ UNIX:																							//
 void	iarduino_GPS_NMEA::_UnixToTime(void){																						//	Получение времени из секунд Unix.
