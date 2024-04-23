@@ -1,15 +1,5 @@
 #include "iarduino_GPS_NMEA.h"																										//
 																																	//
-//		ИНИЦИАЛИЗАЦИЯ ПАРСЕРА:																										//	Возвращаемое значение:	флаг результата инициализации (true/false).
-bool	iarduino_GPS_NMEA::_begin(void){																							//	Параметры:				отсутствуют.
-			if(_flgTypeSerial){																										//	Если модуль был инициализирован, то ...
-			//	Ждём готовность UART после инициализации:																			//	На случай работы с Serial1, Serial2 и т.д.
-				while(!_SerialReady()){;}																							//	
-			//	Возвращаем результат:																								//
-				return true;																										//
-			}	return false;																										//
-}																																	//	
-																																	//
 //		ЧТЕНИЕ ДАННЫХ NMEA ИЗ UART:																									//	Возвращаемое значение:	результат чтения (true/false).
 bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, bool flgSat){										//	Параметры:				arrSat - указатель на начало массива данных о спутниках, arrSum - количество спутников, arrCol - количество данных о спутнике, flgSat - флаг получения данных только о спутниках участвующих в позиционировании).
 		//	Стираем предыдущие данные:																								//
@@ -41,7 +31,7 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 				satellites[GPS_VISIBLE]	= 0;																						//	Сбрасываем предыдущие данные о количестве наблюдаемых спутников	(0-255) наблюдаемые, участвующие в позиционировании.
 				satellites[GPS_ACTIVE]	= 0;																						//	Сбрасываем предыдущие данные о количестве участвующих спутников	(0-255) наблюдаемые, участвующие в позиционировании.
 			if(arrSum){ for(uint8_t i=0; i<(arrSum*arrCol); i++){ arrSat[i]=0; } }													//	Чистим массив данных о спутниках.
-			if(_flgTypeSerial){																										//	Если модуль был инициализирован, то ...
+			if(_flgBegin){																											//	Если парсер был инициализирован, то ...
 			//	Определяем временные переменные:																					//
 				char     _tmpChar;																									//	Объявляем  переменную для временного хранения символа.			(прочитанного из строки).
 				char     _strOperator[6];																							//	Объявляем  строку для хранения названия идентификатора NMEA.	("GNGGA", "GNGLL", "GNRMC" и т.д.).
@@ -55,12 +45,12 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 				uint32_t _timeOut		= millis() + _setTimeOut;																	//	Определяем переменную для хранения времени выхода из функции.
 				float    _valPos		= 0;																						//	Определяем переменную для хранения позиции символа или цифры.	(символа в названии идентификатора, цифры после точки, или символа контрольной суммы).
 			//	Выполняем чтение данных:																							//
-				_SerialFlush();																										//	Чистим буфер UART.
+				_objSerial->flush();																								//	Чистим буфер UART.
 				while( (millis()<_timeOut) && !(available & 0x8000) ){																//	Читаем данные пока время millis() не достигнет значения «_timeOut» или пока не будут прочитаны все данные.
 				//	Если в буфере UART есть данные от модуля:																		//
-					if(_SerialAvailable()){																							//
+					if( _objSerial->available() ){																					//
 					//	Читаем очередной символ из буфера UATR:																		//
-						_tmpChar=_SerialRead();																						//
+						_tmpChar = _objSerial->read();																				//
 					//	Начало строки:																								//
 						if(_tmpChar=='$'){																							//
 							_valParamSum = 0;																						//	Сбрасываем количество обнаруженных параметров.
@@ -73,8 +63,8 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 						//	Чтаем два символа контрольной суммы:																	//
 							_valPos = 0.0f;																							//	Сбрасываем позицию символа контрольной суммы.
 							while( (millis() < _timeOut) && (_valPos < 2.0f) ){														//	Читаем данные пока время «millis()» не достигнет значения «_timeOut» или не будет прочитано 2 символа.
-								if(_SerialAvailable()){																				//
-									_tmpChar=_SerialRead(); _valPos += 1.0f;														//
+								if( _objSerial->available() ){																		//
+									_tmpChar = _objSerial->read(); _valPos += 1.0f;													//
 									_readCheckSum = _readCheckSum * 0x10 + (_tmpChar-((_tmpChar>'9')?('A'-0x0A):'0'));				//
 								}																									//
 							}																										//
@@ -264,14 +254,14 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 						}else																										//
 					//	Завершение строки:																							//
 						if(_tmpChar=='\r' || _tmpChar=='\n'){																		//
-
+																																	//
 						}else{																										//
 					//	Читаем значения строки:																						//
 							_valCheckSum ^= _tmpChar;																				//	Вычисляем контрольную сумму
 						//	Начало очередного параметра:																			//
 							if(_tmpChar==','){																						//	Параметры отделяются друг от друга символом ','.
 								_valPos=0.0f; _valParamSum++; if(_valParamSum>20){_valParamSum=20;} _arrParam[_valParamSum-1]=0.0f;	//	Сбрасываем позицию символа после точки и определяем номер очередного параметра строки.
-								_valParamSign=false;
+								_valParamSign=false;																				//
 							}else																									//
 						//	Параметр содержит значение с дробной частью:															//
 							if(_tmpChar=='.'){																						//
@@ -279,7 +269,7 @@ bool	iarduino_GPS_NMEA::_read(uint8_t* arrSat, uint8_t arrSum, uint8_t arrCol, b
 							}else																									//
 						//	Читаем значение параметра:																				//
 							if(_valParamSum==0){																					//	Если номер параметра «_valParamSum» равен 0, значит от следует после '$' и до ','.
-							//	Читаем название идентификатора:																			//
+							//	Читаем название идентификатора:																		//
 								if(_valPos<5){																						//	Если в строке «_strOperator» еще есть свободное место.
 									_strOperator[(uint8_t)_valPos]=_tmpChar; _valPos+=1.0f; _strOperator[(uint8_t)_valPos]=0;		//	Читаем очередной символ названия идентификатора и добавляем символ конца строки.
 								}																									//
@@ -333,30 +323,6 @@ uint8_t	iarduino_GPS_NMEA::_findIndexID(uint8_t id, uint8_t* arrSat, uint8_t arr
 			}																														//
 			return 0xFF;																											//	Возвращаем номер не существующего элемента массива.
 }																																	//
-																																	//
-//		ФУНКЦИИ РАБОТЫ С UART:																										//
-bool	iarduino_GPS_NMEA::_SerialReady(void){																						//
-			if(_flgTypeSerial==1){return (bool   )(*(HardwareSerial*)_objSerial);            }else									//	Проверка готовности аппаратного UART.
-			#ifdef SoftwareSerial_h																									//
-			if(_flgTypeSerial==2){return (bool   )(*(SoftwareSerial*)_objSerial);            }else									//	Проверка готовности программного UART.
-			#endif																													//
-			                     {return 0;}																						//
-}																																	//
-uint8_t	iarduino_GPS_NMEA::_SerialRead(void){																						//
-			if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).read();     }else									//	Чтение байта из буфера аппаратного UART.
-			#ifdef SoftwareSerial_h																									//
-			if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).read();     }else									//	Чтение байта из буфера программного UART.
-			#endif																													//
-			                     {return 0;}																						//
-}																																	//
-uint8_t	iarduino_GPS_NMEA::_SerialAvailable(void){																					//
-			if(_flgTypeSerial==1){return (uint8_t)(*(HardwareSerial*)_objSerial).available();}else									//	Чтение заполненности буфера аппаратного UART.
-			#ifdef SoftwareSerial_h																									//
-			if(_flgTypeSerial==2){return (uint8_t)(*(SoftwareSerial*)_objSerial).available();}else									//	Чтение заполненности буфера программного UART.
-			#endif																													//
-			                     {return 0;}																						//
-}																																	//
-void	iarduino_GPS_NMEA::_SerialFlush(void){ while(_SerialAvailable()){_SerialRead();} }											//	Очистка буфера UART.
 																																	//
 //		ФУНКЦИИ ОПРЕДЕЛЕНИЯ ВРЕМЕНИ UNIX:																							//
 void	iarduino_GPS_NMEA::_UnixToTime(void){																						//	Получение времени из секунд Unix.

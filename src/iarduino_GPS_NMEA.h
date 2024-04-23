@@ -1,5 +1,5 @@
 //	Библиотека парсинга протокола NMEA.
-//  Версия: 1.1.0
+//  Версия: 1.1.1
 //  Последнюю версию библиотеки Вы можете скачать по ссылке: https://iarduino.ru/file/538.html
 //  Подробное описание функций бибилиотеки доступно по ссылке: https://wiki.iarduino.ru/page/NMEA-protocol-parser/
 //  Библиотека является собственностью интернет магазина iarduino.ru и может свободно использоваться и распространяться!
@@ -11,14 +11,10 @@
 #ifndef iarduino_GPS_NMEA_h																											//
 #define iarduino_GPS_NMEA_h																											//
 																																	//
-#ifdef    SoftwareSerial_h																											//	Если в скетче подключена библиотека  SoftwareSerial,
-#include "SoftwareSerial.h"																											//	то разрешаем работать  с библиотекой SoftwareSerial.
-#endif																																//
-																																	//
 #if defined(ARDUINO) && (ARDUINO >= 100)																							//
-#include		<Arduino.h>																											//
+	#include <Arduino.h>																											//
 #else																																//
-#include		<WProgram.h>																										//
+	#include <WProgram.h>																											//
 #endif																																//
 																																	//
 #define GPS_TimeOUT			2000	/*	Можно изменить	*/																			//	Максимальное время отводимое на чтение данных.
@@ -40,10 +36,7 @@
 class iarduino_GPS_NMEA{																											//
 	public:																															//
 	/**	Пользовательские функции **/																								//
-		bool		begin			(HardwareSerial &i, bool j=1){_flgTypeSerial=1;_objSerial=&i;_flgDataOld=j; return _begin();}	//	Определяем функцию инициализации парсера				(Параметр:  объект для работы с аппаратным  UART, флаг указывающий выводить предыдущие данные при потере связи со спутниками или недостоверными результатами вычислений).
-		#ifdef SoftwareSerial_h																										//
-		bool		begin			(SoftwareSerial &i, bool j=1){_flgTypeSerial=2;_objSerial=&i;_flgDataOld=j; return _begin();}	//	Определяем функцию инициализации парсера				(Параметр:  объект для работы с программным UART, флаг указывающий выводить предыдущие данные при потере связи со спутниками или недостоверными результатами вычислений).
-		#endif																														//
+		bool		begin			(Stream &i, bool j=1		){ _objSerial=&i; _flgDataOld=j; _flgBegin=true; return true; }		//	Определяем функцию инициализации парсера				(Параметр:  объект для работы с UART, флаг указывающий выводить предыдущие данные при потере связи со спутниками или недостоверными результатами вычислений).
 		float		timeZone		(float time=14.0f			){_flgAutoTimeZone=(time==GPS_AutoDetectZone?1:0); if(abs(time)<13.0f){_timeZone=time; } return _timeZone; }	//	Определяем функцию указания/получения часовой зоны		(Параметр:  ±часовой пояс или GPS_AutoDetectZone).
 		template					<typename t,size_t j,size_t k>																	//	Определяем шаблон для следующей функции					(Параметр:  t-тип массива, j-количество элементов массива, k-количество элементов подмассива).
 		bool		read			(t(&i)[j][k], bool f=false	){ return _read(&i[0][0], j, k, f    ); }							//	Определяем функцию чтения данных NMEA из UART			(Параметры: массив для данных о спутниках, флаг получения данных только о спутниках участвующих в позиционировании).
@@ -80,25 +73,19 @@ class iarduino_GPS_NMEA{																											//
 		uint32_t	Unix			= 0;																							//	Определяем переменную для хранения Unix времени			(секунды прошедшие с начала эпохи Unix 01.01.1970 00:00:00 GMT).
 	private:																														//
 	/**	Внутренние переменные **/																									//
-		void*		_objSerial;																										//	Объявляем  указатель на объект работы с UART			(Serial, Serial1, ..., SoftwareSerial).
-		uint8_t		_flgTypeSerial	= 0;																							//	Определяем флаг указывающий на тип соединения			(0-нет, 1-HardwareSerial, 2-SoftwareSerial).
+		Stream*		_objSerial;																										//	Объявляем  указатель на объект работы с UART			(Serial, Serial1, ..., SoftwareSerial).
+		bool		_flgBegin		= false;																						//	Определяем флаг инициализации.
 		uint32_t	_setTimeOut		= GPS_TimeOUT;																					//	Определяем переменную для хранения макс. времени чтения	(максимальное время чтения данных функцией read).
 		float		_timeZone		= GPS_TimeZone;																					//	Определяем временную зону								(±12.0 часов).
 		uint8_t		_flgAutoTimeZone= 0;																							//	Определяем флаг указывающий автоопределение врем. зоны	(0-нет, 1-автоопределение).
 		bool		_flgDataOld;																									//	Объявляем  флаг указывающих выводить старые данные		(если нет новых).
 	/**	Внутренние функции **/																										//
-		bool		_begin			(void							);																//	Объявляем  функцию инициализации парсера				(Параметр:  отсутствует).
 		bool		_read			(uint8_t*,uint8_t,uint8_t,bool	);																//	Объявляем  функцию чтения пакета NMEA					(Параметры: указатель на начало массива данных о спутниках, количество спутников, количество данных о спутнике, флаг получения данных только о спутниках участвующих в позиционировании).
 		uint8_t		_findIndexID	(uint8_t,uint8_t*,uint8_t,uint8_t);																//	Объявляем  функцию обнаружения ID спутника в массиве	(Параметры: искомый ID, указатель на начало массива данных о спутниках, количество спутников, количество данных о спутнике).
 		void		_parseDate		(float num){uint32_t i=num; year   =i%100; i/=100; month  =i%100; i/=100; day  =i%100; if(status[GPS_StatusZDA]=='*'){status[GPS_StatusZDA]='V';} if(status[GPS_StatusZDA]=='V' && num){status[GPS_StatusZDA]='D';} if(status[GPS_StatusZDA]=='T' && num){status[GPS_StatusZDA]='A';} }	//	Парсер даты		(Параметр:  отсутствует). Функция парсит время в переменные day, month, year.
 		void		_parseTime		(float num){uint32_t i=num; seconds=i%100; i/=100; minutes=i%100; i/=100; Hours=i%100; if(status[GPS_StatusZDA]=='*'){status[GPS_StatusZDA]='V';} if(status[GPS_StatusZDA]=='V' && num){status[GPS_StatusZDA]='T';} if(status[GPS_StatusZDA]=='D' && num){status[GPS_StatusZDA]='A';} }	//	Парсер времени	(Параметр:  отсутствует). Функция парсит время в переменные Hours, minutes, seconds.
 		float		_parsePos		(float pos, float dir){float i=(uint32_t)pos/100; i+=(pos-i*100)/60.0f; if(((uint8_t)dir+'0')=='S'||((uint8_t)dir+'0')=='W'){i*=-1.0f;} return i;}	//	Парсер координат	(Параметры: координаты, курс).
-		bool		_SerialReady	(void							);																//	Объявляем  функцию проверки готовности UART				(Параметр:  отсутствует).
-		uint8_t		_SerialRead		(void							);																//	Объявляем  функцию чтения байта из буфера UART			(Параметр:  отсутствует).
-		uint8_t		_SerialAvailable(void							);																//	Объявляем  функцию чтения заполненности буфера UART		(Параметр:  отсутствует).
-		void		_SerialFlush	(void							);																//	Объявляем  функцию очистки буфера UART					(Параметр:  отсутствует).
 		void		_UnixToTime		(void							);																//	Объявляем  функцию получения времени из секунд Unix		(Параметр:  отсутствует).
 		void		_TimeToUnix		(void							);																//	Объявляем  функцию получения секунд Unix из времени		(Параметр:  отсутствует).
 };																																	//
-																																	//
 #endif																																//
