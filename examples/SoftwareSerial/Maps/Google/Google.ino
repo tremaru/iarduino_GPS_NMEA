@@ -6,8 +6,8 @@ const uint8_t pinTX = 9;                          //  Определяем вы�
 #include <SoftwareSerial.h>                       //  Подключаем библиотеку для работы с программным UART, до подключения библиотеки iarduino_GPS_NMEA.
 #include <iarduino_GPS_NMEA.h>                    //  Подключаем библиотеку для расшифровки строк протокола NMEA получаемых по UART.
                                                   //
-SoftwareSerial    SerialGPS(pinRX, pinTX);        //  Объявляем объект SerialGPS для работы с функциями и методами библиотеки SoftwareSerial, указав выводы RX и TX Arduino.
-iarduino_GPS_NMEA gps;                            //  Объявляем объект gps для работы с функциями и методами библиотеки iarduino_GPS_NMEA.
+SoftwareSerial    SerialGPS(pinRX, pinTX);        //  Создаём объект SerialGPS для работы с функциями и методами библиотеки SoftwareSerial, указав выводы RX и TX Arduino.
+iarduino_GPS_NMEA gps;                            //  Создаём объект gps для работы с функциями и методами библиотеки iarduino_GPS_NMEA.
                                                   //
 void setup(){                                     //
      Serial.begin(9600);                          //  Инициируем работу с аппаратной шиной UART для вывода данных в монитор последовательного порта на скорости 9600 бит/сек.
